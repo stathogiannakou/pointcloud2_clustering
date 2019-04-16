@@ -41,20 +41,6 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
     //std::cout << "PointCloud before filtering has: " << cloud->points.size () << " data points." << std::endl; //*
 
-    // Create the segmentation object for the planar model and set all the parameters
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
-    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
-    seg.setOptimizeCoefficients (true);
-    seg.setModelType (pcl::SACMODEL_PLANE);
-    seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setMaxIterations (maxIterations);
-    seg.setDistanceThreshold (distanceThreshold);
-    seg.setInputCloud (cloud);
-    seg.segment (*inliers, *coefficients);
-
-
     // Creating the KdTree object for the search method of the extraction
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
     tree->setInputCloud (cloud);
@@ -68,11 +54,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
     ec.setInputCloud (cloud);
     ec.extract (cluster_indices);
 
-    int j = 0;
-
     pointcloud_msgs::PointCloud2_Segments msg_;
-
-
 
     for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
     {
@@ -87,7 +69,6 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
         cloud_cluster->is_dense = true;
 
         //std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
-        j++;
 
         sensor_msgs::PointCloud2 msgout;
         pcl::PCLPointCloud2 cloud2;
@@ -96,22 +77,22 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
         pcl_conversions::fromPCL(cloud2, msgout);
 
         msg_.clusters.push_back(msgout);
-
-        msg_.header.stamp = ros::Time::now();
-        msg_.header.frame_id = c_.header.frame_id;
-        msg_.factor = c_.factor;
-        msg_.overlap = c_.overlap;
-        msg_.first_stamp = c_.first_stamp;
-        msg_.num_scans = c_.num_scans ;
-        msg_.angle_min = c_.angle_min ;
-        msg_.angle_max = c_.angle_max ;
-        msg_.angle_increment = c_.angle_increment;
-        msg_.range_min = c_.range_min;
-        msg_.range_max = c_.range_max;
-        msg_.scan_time = c_.scan_time;
-        msg_.rec_time = c_.rec_time; 
-
     }
+
+    msg_.header.stamp = ros::Time::now();
+    msg_.header.frame_id = c_.header.frame_id;
+    msg_.factor = c_.factor;
+    msg_.overlap = c_.overlap;
+    msg_.first_stamp = c_.first_stamp;
+    msg_.num_scans = c_.num_scans ;
+    msg_.angle_min = c_.angle_min ;
+    msg_.angle_max = c_.angle_max ;
+    msg_.angle_increment = c_.angle_increment;
+    msg_.range_min = c_.range_min;
+    msg_.range_max = c_.range_max;
+    msg_.scan_time = c_.scan_time;
+    msg_.rec_time = c_.rec_time; 
+
     pub.publish(msg_);
 
 }
