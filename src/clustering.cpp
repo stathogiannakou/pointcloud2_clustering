@@ -27,6 +27,137 @@ double clusterTolerance, distanceThreshold, percentOfpoints;
 int maxIterations;
 int minClusterSize, maxClusterSize;
 
+double minMotionDist=1000.0;
+std::vector<Eigen::Vector4f> centroids;
+
+
+
+
+
+std::pair<double,double> minmaxz (sensor_msgs::PointCloud2 clust){  //return max and min z of cluster
+
+
+    pcl::PCLPointCloud2 p2;
+    pcl_conversions::toPCL ( clust , p2 ); //from sensor_msgs::pointcloud2 to pcl::pointcloud2
+
+    pcl::PointCloud<pcl::PointXYZ> p3;
+    pcl::fromPCLPointCloud2 ( p2 , p3 );       //from pcl::pointcloud2 to pcl::pointcloud
+
+    double max_z = p3.points[0].z;
+    double min_z = p3.points[0].z;
+    for (int i=1; i < p3.points.size(); i++){   //find max and min z of cluster 
+        if(p3.points[i].z > max_z){
+            max_z = p3.points[i].z;
+        }
+        if(p3.points[i].z < min_z){
+            min_z = p3.points[i].z;
+        }
+    }
+
+    return std::make_pair( max_z , min_z );
+}
+
+pcl::PointCloud<pcl::PointXYZ> saveAllPoints(sensor_msgs::PointCloud2 clust){  //save all points of a cluster to pointcloud form
+
+
+    pcl::PCLPointCloud2 pc2;
+    pcl_conversions::toPCL ( clust , pc2 );   //from sensor_msgs::pointcloud2 to pcl::pointcloud2
+
+    pcl::PointCloud<pcl::PointXYZ> pc;
+    pcl::fromPCLPointCloud2 ( pc2 , pc );               //from pcl::pointcloud2 to pcl::pointcloud
+
+    return pc;
+}
+
+pcl::PointCloud<pcl::PointXYZ> saveAllZValuePoints(sensor_msgs::PointCloud2 clust, double zvalue){  //save all points whose z is equal to zvalue
+
+    pcl::PointCloud<pcl::PointXYZ> pcz3;
+    pcl::PointCloud<pcl::PointXYZ> pc;
+    pc=saveAllPoints(clust);
+
+    for(int i=0; i < pc.points.size(); i++){        //add points with zvalue to a new pointcloud
+        if(pc.points[i].z == zvalue){
+            pcz3.push_back(pc.points[i]);
+        }
+    }
+    return pcz3;
+}
+
+pcl::PointCloud<pcl::PointXYZ> saveAllZPointsFrom(sensor_msgs::PointCloud2 clust, double zFrom){   // save all points whose z is grater than or equal to zFrom
+
+    pcl::PointCloud<pcl::PointXYZ> pcz3;
+    pcl::PointCloud<pcl::PointXYZ> pc;
+    pc=saveAllPoints(clust); 
+
+    for(int i=0; i < pc.points.size(); i++){        //add points with max z to a new pointcloud
+        if(pc.points[i].z >= zFrom  ){
+            pcz3.push_back(pc.points[i]);
+        }
+    }
+
+    return pcz3;
+}
+
+pcl::PointCloud<pcl::PointXYZ> saveAllZPointsUntil(sensor_msgs::PointCloud2 clust, double zUntil){   // save all points whose z is less than or equal to zUntil
+
+    pcl::PointCloud<pcl::PointXYZ> pcz3;
+    pcl::PointCloud<pcl::PointXYZ> pc;
+    pc=saveAllPoints(clust);
+
+    for(int i=0; i < pc.points.size(); i++){        //add points with max z to a new pointcloud
+        if(pc.points[i].z <= zUntil  ){
+            pcz3.push_back(pc.points[i]);
+        }
+    }
+
+    return pcz3;
+}
+
+
+bool checkforsameXYpoints(pcl::PointCloud<pcl::PointXYZ> pcz_max, pcl::PointCloud<pcl::PointXYZ> pcz_min){ // check if a maxz point is enclosed to minz points
+
+   
+    double xmin,xmax, ymin, ymax;
+
+    xmin= pcz_min.points[0].x;
+    xmax= pcz_min.points[0].x;
+    ymin= pcz_min.points[0].y;
+    ymax= pcz_min.points[0].y;
+
+    for(int i=1; i < pcz_min.points.size(); i++){        
+        if(pcz_min.points[i].x < xmin){
+            xmin= pcz_min.points[i].x;
+        }
+        if(pcz_min.points[i].x > xmax){
+            xmax= pcz_min.points[i].x;
+        }
+        if(pcz_min.points[i].y < ymin){
+            ymin= pcz_min.points[i].y;
+        }
+        if(pcz_min.points[i].y > ymax){
+            ymax= pcz_min.points[i].y;
+        }
+    }
+
+    bool same=false;
+
+    for(int k=0; k < pcz_max.points.size(); k++){        
+        if(pcz_max.points[k].x >= xmin && pcz_max.points[k].x <= xmax && pcz_max.points[k].y >= ymin && pcz_max.points[k].y <= ymax){
+            same=true;
+            break;
+        }
+    }
+    return same;
+}
+
+
+
+
+
+
+
+
+
 
 void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 {
@@ -103,6 +234,9 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
      pointcloud_msgs::PointCloud2_Segments msg_;
 
 
+     std::vector<sensor_msgs::PointCloud2> temp_clusters;
+
+
     for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
     {
 
@@ -123,28 +257,193 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
         pcl_conversions::fromPCL(cloud2, msgout);
 
-        msg_.clusters.push_back(msgout);
+        temp_clusters.push_back(msgout);
+        //msg_.clusters.push_back(msgout);
     }
 
 
-    msg_.header.stamp = ros::Time::now();
-    msg_.header.frame_id = c_.header.frame_id;
-    msg_.factor = c_.factor;
-    msg_.overlap = c_.overlap;
-    msg_.first_stamp = c_.first_stamp;
-    msg_.num_scans = c_.num_scans ;
-    msg_.angle_min = c_.angle_min ;
-    msg_.angle_max = c_.angle_max ;
-    msg_.angle_increment = c_.angle_increment;
-    msg_.range_min = c_.range_min;
-    msg_.range_max = c_.range_max;
-    msg_.scan_time = c_.scan_time;
-    msg_.rec_time = c_.rec_time;
-    msg_.middle_z = c_.middle_z;
-    msg_.idForTracking = c_.idForTracking; 
 
 
-    pub.publish(msg_);
+    int initial_size = temp_clusters.size();
+
+    float global_maxz=0;
+    std::vector<float> maxz(initial_size, 0.0), minz(initial_size, 0.0);
+    std::vector<int> numOfPoints(initial_size, 0);
+
+
+    float maxy, miny, maxy_x, miny_x;
+    bool linear_flag;
+
+    for(int i=initial_size-1; i>=0; i--){
+
+        pcl::PCLPointCloud2 pc2;
+        pcl_conversions::toPCL ( temp_clusters[i] , pc2 );
+        pcl::PointCloud<pcl::PointXYZ> cloud2;
+        pcl::fromPCLPointCloud2 ( pc2 , cloud2 );
+        
+        linear_flag=true;
+
+        maxz[i]=cloud2.points[0].z;
+        minz[i]=cloud2.points[0].z;
+
+        maxy=cloud2.points[0].y;
+        miny=cloud2.points[0].y;
+        maxy_x=cloud2.points[0].x;
+        miny_x=cloud2.points[0].x;
+
+
+
+        for(int j=1; j < cloud2.points.size(); j++){   //find max and min z of cluster
+
+
+            if(cloud2.points[j].y > maxy){
+                maxy = cloud2.points[j].y;
+                maxy_x = cloud2.points[j].x;
+            }
+            if(cloud2.points[j].y < miny){
+                miny = cloud2.points[j].y;
+                miny_x = cloud2.points[j].x;
+            }
+            if(cloud2.points[j].z > maxz[i]){
+                maxz[i] = cloud2.points[j].z;
+            }
+            if(cloud2.points[j].z < minz[i]){
+                minz[i] = cloud2.points[j].z;
+            }
+        }
+
+
+        numOfPoints[i]= cloud2.points.size();
+
+        if(maxz[i]>global_maxz) global_maxz = maxz[i];        
+
+        if((maxy!=miny or maxy_x!=miny_x)  and numOfPoints[i]>3){ 
+
+            double y = maxy-miny;
+            double x = maxy_x-miny_x;
+            double dist;
+
+            for(int j=0; j < cloud2.points.size(); j++){
+
+                dist = abs(x*cloud2.points[j].y - y*cloud2.points[j].x + maxy*miny_x -maxy_x*miny) / sqrt(pow(y,2)+pow(x,2));
+                if(dist>0.15){
+                    linear_flag=false;
+                    break;
+                }
+
+
+        
+            }
+        }
+
+        if(linear_flag==true){
+
+            temp_clusters.erase(temp_clusters.begin()+i);
+            maxz.erase(maxz.begin()+i);
+            minz.erase(minz.begin()+i);
+            numOfPoints.erase(numOfPoints.begin()+i);
+            std::cout << "Linear!!" << std::endl;
+        }
+    }
+
+
+
+
+
+
+    initial_size = temp_clusters.size();
+
+    for(int i=initial_size-1; i>=0; i--){
+
+        pcl::PointCloud<pcl::PointXYZ> pczmax;
+        pcl::PointCloud<pcl::PointXYZ> pczmin;
+
+        // double max_z, min_z;
+        // std::pair<double,double> z_minmax;
+
+        // z_minmax = minmaxz(temp_clusters[i]);
+        // max_z = z_minmax.first;
+        // min_z = z_minmax.second;
+
+        // pczmax=saveAllZValuePoints(temp_clusters[i], max_z);
+        // pczmin=saveAllZValuePoints(temp_clusters[i], min_z);
+
+ //        Eigen::Vector4f max_centroid;
+ //        pcl::compute3DCentroid ( pczmax , max_centroid);
+
+ //        Eigen::Vector4f min_centroid;
+ //        pcl::compute3DCentroid ( pczmin , min_centroid);
+
+ //        double disttt;
+
+ //        disttt = 1000 * sqrt(pow(max_centroid[0]-min_centroid[0], 2) + pow(max_centroid[1]-min_centroid[1], 2));
+ //        if(disttt > minMotionDist){
+ // std::cout << "11111!!" << std::endl;
+            //                                double check                    //
+            pczmax=saveAllZPointsFrom(temp_clusters[i], (3*abs(maxz[i] - minz[i])/4)+minz[i]);
+            pczmin=saveAllZPointsUntil(temp_clusters[i],  (abs(maxz[i] - minz[i])/4)+minz[i]);
+            bool samepoints = true;
+            if(pczmax.size()!=0 and pczmin.size()!=0 ){
+                samepoints=checkforsameXYpoints(pczmax, pczmin);
+            }
+           if(samepoints==true){
+
+
+                std::cout << "444444444!!" << std::endl;
+
+                temp_clusters.erase(temp_clusters.begin()+i);
+                
+                //std::cout << "cluster in motion id = " << msg.cluster_id[j] << "dist = " << disttt << std::endl;    
+            }
+        //}
+    }
+
+
+
+
+
+
+    // initial_size = temp_clusters.size();
+
+    // double total_distz= global_maxz/60.0;
+
+    // for(int i=0; i < initial_size; i++){
+
+    //     double dif_z = maxz[initial_size-1-i] - minz[initial_size-1-i];
+    //     double dist_z = dif_z/total_distz;
+
+    //    // if(maxz[initial_size-1-i]==global_maxz and minz[initial_size-1-i]== 0 and numOfPoints[initial_size-1-i]<300 ){
+
+    //     if(numOfPoints[initial_size-1-i]< (300*dist_z)/60.0 ){
+    //         temp_clusters.erase (temp_clusters.begin()+initial_size-1-i);
+    //         std::cout << "Mpike!!" << std::endl;
+    //     }
+    // }
+
+    if(temp_clusters.size()>0){
+
+        msg_.clusters=temp_clusters;
+
+
+        msg_.header.stamp = ros::Time::now();
+        msg_.header.frame_id = c_.header.frame_id;
+        msg_.factor = c_.factor;
+        msg_.overlap = c_.overlap;
+        msg_.first_stamp = c_.first_stamp;
+        msg_.num_scans = c_.num_scans ;
+        msg_.angle_min = c_.angle_min ;
+        msg_.angle_max = c_.angle_max ;
+        msg_.angle_increment = c_.angle_increment;
+        msg_.range_min = c_.range_min;
+        msg_.range_max = c_.range_max;
+        msg_.scan_time = c_.scan_time;
+        msg_.rec_time = c_.rec_time;
+        msg_.middle_z = c_.middle_z;
+        msg_.idForTracking = c_.idForTracking; 
+
+
+        pub.publish(msg_);
+    }
 }
 
 int main (int argc, char** argv){
