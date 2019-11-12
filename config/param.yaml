@@ -8,3 +8,7 @@ minClusterSize: 80 #default= 100
 maxClusterSize: 250000 #default= 25000
 percentOfpoints: 0.30 #which is the minimum percentage of the original points to keep
 moving_clusters_only: true # keep only moving clusters
+linear_check: true  # check clusters linearity
+vertical_check: true #check clusters verticality
+linear_dist: 0.2 # max distance between points for linear cluster
+vertical_dist: 0.3 # max distance between points for vertical cluster 

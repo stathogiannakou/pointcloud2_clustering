@@ -27,8 +27,8 @@ double clusterTolerance, distanceThreshold, percentOfpoints;
 int maxIterations;
 int minClusterSize, maxClusterSize;
 
-
-bool moving_clusters_only;
+bool moving_clusters_only, linear_check, vertical_check;
+double vertical_dist, linear_dist;
 
 
 
@@ -265,12 +265,8 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
         int initial_size = temp_clusters.size();
 
-        float global_maxz=0;
-        std::vector<float> maxz(initial_size, 0.0), minz(initial_size, 0.0);
-        std::vector<int> numOfPoints(initial_size, 0);
-
-
-        float maxy, miny, maxy_x, miny_x, maxx, minx, maxx_y, minx_y ;
+        int numOfPoints;
+        float maxz, minz, maxy, miny, maxy_x, miny_x, maxx, minx, maxx_y, minx_y ;
         bool linear_flag;
 
         for(int i=initial_size-1; i>=0; i--){
@@ -282,8 +278,8 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             
             linear_flag=true;
 
-            maxz[i]=cloud2.points[0].z;
-            minz[i]=cloud2.points[0].z;
+            maxz=cloud2.points[0].z;
+            minz=cloud2.points[0].z;
 
             maxy=cloud2.points[0].y;
             miny=cloud2.points[0].y;
@@ -300,12 +296,12 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             for(int j=1; j < cloud2.points.size(); j++){   //find max and min z of cluster
 
 
-                if(cloud2.points[j].z > maxz[i]){
-                    maxz[i] = cloud2.points[j].z;
+                if(cloud2.points[j].z > maxz){
+                    maxz = cloud2.points[j].z;
                 }
-                if(cloud2.points[j].z < minz[i]){
+                if(cloud2.points[j].z < minz){
 
-                    minz[i] = cloud2.points[j].z;
+                    minz = cloud2.points[j].z;
                     
                     maxy = cloud2.points[j].y;
                     maxy_x = cloud2.points[j].x;
@@ -317,7 +313,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     minx = cloud2.points[j].x;
                     minx_y = cloud2.points[j].y;                    
                 }
-                else if(cloud2.points[j].z == minz[i]){
+                else if(cloud2.points[j].z == minz){
 
                     if(cloud2.points[j].y > maxy){
                         maxy = cloud2.points[j].y;
@@ -339,63 +335,102 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                 } 
             }
 
+            if(linear_check == true){
 
-            numOfPoints[i]= cloud2.points.size();
+                numOfPoints= cloud2.points.size();
+            
+                if((maxy!=miny or maxy_x!=miny_x) and maxx!=minx  and numOfPoints>3){ 
 
-            if(maxz[i]>global_maxz) global_maxz = maxz[i];        
+                    double yy = maxy-miny;
+                    double yx = maxy_x-miny_x;
+                    double xx = maxx-minx;
+                    double xy = maxx_y-minx_y;
+                    double disty, distx;
+                    for(int j=0; j < cloud2.points.size(); j++){
 
-            if((maxy!=miny or maxy_x!=miny_x) and maxx!=minx  and numOfPoints[i]>3){ 
-
-                double yy = maxy-miny;
-                double yx = maxy_x-miny_x;
-                double xx = maxx-minx;
-                double xy = maxx_y-minx_y;
-                double disty, distx;
-                for(int j=0; j < cloud2.points.size(); j++){
-
-                    disty = abs(yx*cloud2.points[j].y - yy*cloud2.points[j].x + maxy*miny_x -maxy_x*miny) / sqrt(pow(yy,2)+pow(yx,2));
-                    distx = abs(xx*cloud2.points[j].y - xy*cloud2.points[j].x + maxx*minx_y -maxx_y*minx) / sqrt(pow(xy,2)+pow(xx,2));
-                    if(disty>0.2 and distx>0.2){
-                        linear_flag=false;
-                        break;
+                        disty = abs(yx*cloud2.points[j].y - yy*cloud2.points[j].x + maxy*miny_x -maxy_x*miny) / sqrt(pow(yy,2)+pow(yx,2));
+                        distx = abs(xx*cloud2.points[j].y - xy*cloud2.points[j].x + maxx*minx_y -maxx_y*minx) / sqrt(pow(xy,2)+pow(xx,2));
+                        if(disty>linear_dist and distx>linear_dist){
+                            linear_flag=false;
+                            break;
+                        }
                     }
+                }
+
+                if(linear_flag==true){
+
+                    temp_clusters.erase(temp_clusters.begin()+i);
+                    std::cout << "Linear!!" << std::endl;
                 }
             }
 
-            if(linear_flag==true){
-
-                temp_clusters.erase(temp_clusters.begin()+i);
-                maxz.erase(maxz.begin()+i);
-                minz.erase(minz.begin()+i);
-                numOfPoints.erase(numOfPoints.begin()+i);
-                std::cout << "Linear!!" << std::endl;
-            }
-        }
-
-        initial_size = temp_clusters.size();
-
-        for(int i=initial_size-1; i>=0; i--){
-
-            pcl::PointCloud<pcl::PointXYZ> pczmax;
-            pcl::PointCloud<pcl::PointXYZ> pczmin;
-
-            pczmax=saveAllZPointsFrom(temp_clusters[i], (4*abs(maxz[i] - minz[i])/5)+minz[i]);
-            pczmin=saveAllZPointsUntil(temp_clusters[i],  (abs(maxz[i] - minz[i])/5)+minz[i]);
-            // pczmin=saveAllZValuePoints(temp_clusters[i], minz[i]);
-            bool samepoints = true;
-            if(pczmax.size()!=0 and pczmin.size()!=0 ){
-                samepoints=checkforsameXYpoints(pczmax, pczmin);
-            }
-           if(samepoints==true){
 
 
-                std::cout << "Vertical!!" << std::endl;
-
-                temp_clusters.erase(temp_clusters.begin()+i);
+            if(vertical_check==true and (linear_check==false or linear_flag==false)){
                 
-                //std::cout << "cluster in motion id = " << msg.cluster_id[j] << "dist = " << disttt << std::endl;    
-            } 
-        }
+                pcl::PointCloud<pcl::PointXYZ> pczmax;
+                pcl::PointCloud<pcl::PointXYZ> pczmin;
+
+                pczmax=saveAllZPointsFrom(temp_clusters[i], (3*abs(maxz - minz)/4)+minz);
+                pczmin=saveAllZPointsUntil(temp_clusters[i],  (abs(maxz - minz)/4)+minz);
+                // pczmin=saveAllZValuePoints(temp_clusters[i], minz);
+                bool samepoints = true;
+
+                for(int k=0; k < pczmin.points.size(); k++){
+
+                    if(pczmin.points[k].y > maxy){
+                        maxy = pczmin.points[k].y;
+                        maxy_x = pczmin.points[k].x;
+                    }
+                    if(pczmin.points[k].y < miny){
+                        miny = pczmin.points[k].y;
+                        miny_x = pczmin.points[k].x;
+                    }
+                    if(pczmin.points[k].x > maxx){
+                        maxx = pczmin.points[k].x;
+                        maxx_y = pczmin.points[k].y;
+                    }
+                    if(pczmin.points[k].x < minx){
+                        minx = pczmin.points[k].x;
+                        minx_y = pczmin.points[k].y;
+                    }
+                }
+
+
+                int counter=0;
+
+
+                for(int k=0; k < pczmax.points.size(); k++){        
+
+
+                    double dist_y= sqrt(pow( maxy- miny, 2)+pow(maxy_x - miny_x, 2));
+                    double dist_x= sqrt(pow( maxx_y-minx_y, 2)+pow(maxx-minx, 2));
+
+                    double dist_maxy= sqrt(pow( maxy- pczmax.points[k].y, 2)+pow(maxy_x - pczmax.points[k].x, 2));
+                    double dist_miny= sqrt(pow( miny- pczmax.points[k].y, 2)+pow(miny_x - pczmax.points[k].x, 2));
+                    double dist_maxx= sqrt(pow( maxx_y- pczmax.points[k].y, 2)+pow(maxx - pczmax.points[k].x, 2));
+                    double dist_minx= sqrt(pow( minx_y- pczmax.points[k].y, 2)+pow(minx - pczmax.points[k].x, 2));
+
+
+                    if(pczmax.points[k].x >= minx && pczmax.points[k].x <= maxx && pczmax.points[k].y >= miny && pczmax.points[k].y <= maxy) counter++;
+
+
+                    if(dist_maxy > dist_y + vertical_dist or dist_miny > dist_y + vertical_dist or dist_maxx > dist_x + vertical_dist or dist_minx > dist_x + vertical_dist){
+                        samepoints = false;
+                        // break;
+                    }
+                }
+
+                if(counter>=0.1*pczmin.points.size() and samepoints==false) samepoints=true;
+            
+               if(samepoints==true){
+
+                    std::cout << "Vertical!!" << std::endl;
+
+                    temp_clusters.erase(temp_clusters.begin()+i);        
+                }        
+            }
+        }   
     }
 
     if(temp_clusters.size()>0){
@@ -436,6 +471,11 @@ int main (int argc, char** argv){
     n_.param("pointcloud2_clustering/maxClusterSize", maxClusterSize, 25000);
     n_.param("pointcloud2_clustering/percentOfpoints", percentOfpoints, 0.20);
     n_.param("pointcloud2_clustering/moving_clusters_only", moving_clusters_only, false);
+    n_.param("pointcloud2_clustering/vertical_check", vertical_check, false);
+    n_.param("pointcloud2_clustering/linear_check", linear_check, false);
+    n_.param("pointcloud2_clustering/linear_dist", linear_dist, 0.2);
+    n_.param("pointcloud2_clustering/vertical_dist", vertical_dist, 0.3);
+
 
     std::string topic;
     std::string out_topic;
