@@ -27,8 +27,6 @@ double clusterTolerance, distanceThreshold, percentOfpoints;
 int maxIterations;
 int minClusterSize, maxClusterSize;
 
-double minMotionDist=1000.0;
-std::vector<Eigen::Vector4f> centroids;
 
 bool moving_clusters_only;
 
@@ -231,10 +229,10 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
     ec.extract (cluster_indices);
 
 
-     pointcloud_msgs::PointCloud2_Segments msg_;
+    pointcloud_msgs::PointCloud2_Segments msg_;
 
 
-     std::vector<sensor_msgs::PointCloud2> temp_clusters;
+    std::vector<sensor_msgs::PointCloud2> temp_clusters;
 
 
     for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
@@ -263,7 +261,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
 
     if(moving_clusters_only==true){
-        
+
 
         int initial_size = temp_clusters.size();
 
@@ -272,7 +270,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
         std::vector<int> numOfPoints(initial_size, 0);
 
 
-        float maxy, miny, maxy_x, miny_x;
+        float maxy, miny, maxy_x, miny_x, maxx, minx, maxx_y, minx_y ;
         bool linear_flag;
 
         for(int i=initial_size-1; i>=0; i--){
@@ -292,25 +290,53 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             maxy_x=cloud2.points[0].x;
             miny_x=cloud2.points[0].x;
 
+            maxx=cloud2.points[0].x;
+            minx=cloud2.points[0].x;
+            maxx_y=cloud2.points[0].y;
+            minx_y=cloud2.points[0].y;
+
 
 
             for(int j=1; j < cloud2.points.size(); j++){   //find max and min z of cluster
 
 
-                if(cloud2.points[j].y > maxy){
-                    maxy = cloud2.points[j].y;
-                    maxy_x = cloud2.points[j].x;
-                }
-                if(cloud2.points[j].y < miny){
-                    miny = cloud2.points[j].y;
-                    miny_x = cloud2.points[j].x;
-                }
                 if(cloud2.points[j].z > maxz[i]){
                     maxz[i] = cloud2.points[j].z;
                 }
                 if(cloud2.points[j].z < minz[i]){
+
                     minz[i] = cloud2.points[j].z;
+                    
+                    maxy = cloud2.points[j].y;
+                    maxy_x = cloud2.points[j].x;
+                    miny = cloud2.points[j].y;
+                    miny_x = cloud2.points[j].x;
+
+                    maxx = cloud2.points[j].x;
+                    maxx_y = cloud2.points[j].y;
+                    minx = cloud2.points[j].x;
+                    minx_y = cloud2.points[j].y;                    
                 }
+                else if(cloud2.points[j].z == minz[i]){
+
+                    if(cloud2.points[j].y > maxy){
+                        maxy = cloud2.points[j].y;
+                        maxy_x = cloud2.points[j].x;
+                    }
+                    if(cloud2.points[j].y < miny){
+                        miny = cloud2.points[j].y;
+                        miny_x = cloud2.points[j].x;
+                    }
+                    if(cloud2.points[j].x > maxx){
+                        maxx = cloud2.points[j].x;
+                        maxx_y = cloud2.points[j].y;
+                    }
+                    if(cloud2.points[j].x < minx){
+                        minx = cloud2.points[j].x;
+                        minx_y = cloud2.points[j].y;
+                    }
+
+                } 
             }
 
 
@@ -318,22 +344,21 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
             if(maxz[i]>global_maxz) global_maxz = maxz[i];        
 
-            if((maxy!=miny or maxy_x!=miny_x)  and numOfPoints[i]>3){ 
+            if((maxy!=miny or maxy_x!=miny_x) and maxx!=minx  and numOfPoints[i]>3){ 
 
-                double y = maxy-miny;
-                double x = maxy_x-miny_x;
-                double dist;
-
+                double yy = maxy-miny;
+                double yx = maxy_x-miny_x;
+                double xx = maxx-minx;
+                double xy = maxx_y-minx_y;
+                double disty, distx;
                 for(int j=0; j < cloud2.points.size(); j++){
 
-                    dist = abs(x*cloud2.points[j].y - y*cloud2.points[j].x + maxy*miny_x -maxy_x*miny) / sqrt(pow(y,2)+pow(x,2));
-                    if(dist>0.15){
+                    disty = abs(yx*cloud2.points[j].y - yy*cloud2.points[j].x + maxy*miny_x -maxy_x*miny) / sqrt(pow(yy,2)+pow(yx,2));
+                    distx = abs(xx*cloud2.points[j].y - xy*cloud2.points[j].x + maxx*minx_y -maxx_y*minx) / sqrt(pow(xy,2)+pow(xx,2));
+                    if(disty>0.2 and distx>0.2){
                         linear_flag=false;
                         break;
                     }
-
-
-            
                 }
             }
 
@@ -347,11 +372,6 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             }
         }
 
-
-
-
-
-
         initial_size = temp_clusters.size();
 
         for(int i=initial_size-1; i>=0; i--){
@@ -359,67 +379,23 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             pcl::PointCloud<pcl::PointXYZ> pczmax;
             pcl::PointCloud<pcl::PointXYZ> pczmin;
 
-            // double max_z, min_z;
-            // std::pair<double,double> z_minmax;
-
-            // z_minmax = minmaxz(temp_clusters[i]);
-            // max_z = z_minmax.first;
-            // min_z = z_minmax.second;
-
-            // pczmax=saveAllZValuePoints(temp_clusters[i], max_z);
-            // pczmin=saveAllZValuePoints(temp_clusters[i], min_z);
-
-     //        Eigen::Vector4f max_centroid;
-     //        pcl::compute3DCentroid ( pczmax , max_centroid);
-
-     //        Eigen::Vector4f min_centroid;
-     //        pcl::compute3DCentroid ( pczmin , min_centroid);
-
-     //        double disttt;
-
-     //        disttt = 1000 * sqrt(pow(max_centroid[0]-min_centroid[0], 2) + pow(max_centroid[1]-min_centroid[1], 2));
-     //        if(disttt > minMotionDist){
-     // std::cout << "11111!!" << std::endl;
-                //                                double check                    //
-                pczmax=saveAllZPointsFrom(temp_clusters[i], (3*abs(maxz[i] - minz[i])/4)+minz[i]);
-                pczmin=saveAllZPointsUntil(temp_clusters[i],  (abs(maxz[i] - minz[i])/4)+minz[i]);
-                bool samepoints = true;
-                if(pczmax.size()!=0 and pczmin.size()!=0 ){
-                    samepoints=checkforsameXYpoints(pczmax, pczmin);
-                }
-               if(samepoints==true){
+            pczmax=saveAllZPointsFrom(temp_clusters[i], (4*abs(maxz[i] - minz[i])/5)+minz[i]);
+            pczmin=saveAllZPointsUntil(temp_clusters[i],  (abs(maxz[i] - minz[i])/5)+minz[i]);
+            // pczmin=saveAllZValuePoints(temp_clusters[i], minz[i]);
+            bool samepoints = true;
+            if(pczmax.size()!=0 and pczmin.size()!=0 ){
+                samepoints=checkforsameXYpoints(pczmax, pczmin);
+            }
+           if(samepoints==true){
 
 
-                    std::cout << "444444444!!" << std::endl;
+                std::cout << "Vertical!!" << std::endl;
 
-                    temp_clusters.erase(temp_clusters.begin()+i);
-                    
-                    //std::cout << "cluster in motion id = " << msg.cluster_id[j] << "dist = " << disttt << std::endl;    
-                }
-            //}
+                temp_clusters.erase(temp_clusters.begin()+i);
+                
+                //std::cout << "cluster in motion id = " << msg.cluster_id[j] << "dist = " << disttt << std::endl;    
+            } 
         }
-
-
-
-
-
-
-        // initial_size = temp_clusters.size();
-
-        // double total_distz= global_maxz/60.0;
-
-        // for(int i=0; i < initial_size; i++){
-
-        //     double dif_z = maxz[initial_size-1-i] - minz[initial_size-1-i];
-        //     double dist_z = dif_z/total_distz;
-
-        //    // if(maxz[initial_size-1-i]==global_maxz and minz[initial_size-1-i]== 0 and numOfPoints[initial_size-1-i]<300 ){
-
-        //     if(numOfPoints[initial_size-1-i]< (300*dist_z)/60.0 ){
-        //         temp_clusters.erase (temp_clusters.begin()+initial_size-1-i);
-        //         std::cout << "Mpike!!" << std::endl;
-        //     }
-        // }
     }
 
     if(temp_clusters.size()>0){
