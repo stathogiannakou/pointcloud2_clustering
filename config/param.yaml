@@ -1,6 +1,7 @@
 topic: "laserscan_stacker/scans"
 out_topic: "pointcloud2_clustering/clusters"
-
+stationary_topic: "pointcloud2_cluster_tracking/clusters"
+#stationary_topic: "pointcloud2_clustering/stationary_clusters"
 maxIterations: 100 #default= 100
 distanceThreshold: 0.02 #default= 0.02 
 clusterTolerance: 0.3 #default= 0.02

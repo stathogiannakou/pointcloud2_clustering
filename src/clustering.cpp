@@ -20,7 +20,7 @@
 #include <pcl/segmentation/extract_clusters.h>
 
 
-ros::Publisher pub;
+ros::Publisher pub, stationary_pub;
 
 double clusterTolerance, distanceThreshold, percentOfpoints;
 
@@ -147,10 +147,6 @@ bool checkforsameXYpoints(pcl::PointCloud<pcl::PointXYZ> pcz_max, pcl::PointClou
     }
     return same;
 }
-
-
-
-
 
 
 
@@ -358,9 +354,9 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                 }
 
                 if(linear_flag==true){
-
+                    msg_.stationary_clusters.push_back(temp_clusters[i]);
                     temp_clusters.erase(temp_clusters.begin()+i);
-                    std::cout << "Linear!!" << std::endl;
+                    //std::cout << "Linear!!" << std::endl;
                 }
             }
 
@@ -425,38 +421,37 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             
                if(samepoints==true){
 
-                    std::cout << "Vertical!!" << std::endl;
-
+                   // std::cout << "Vertical!!" << std::endl;
+                    msg_.stationary_clusters.push_back(temp_clusters[i]);
                     temp_clusters.erase(temp_clusters.begin()+i);        
                 }        
             }
         }   
     }
 
-    if(temp_clusters.size()>0){
+    
 
-        msg_.clusters=temp_clusters;
+    msg_.clusters=temp_clusters;
 
+    msg_.header.stamp = ros::Time::now();
+    msg_.header.frame_id = c_.header.frame_id;
+    msg_.factor = c_.factor;
+    msg_.overlap = c_.overlap;
+    msg_.first_stamp = c_.first_stamp;
+    msg_.num_scans = c_.num_scans ;
+    msg_.angle_min = c_.angle_min ;
+    msg_.angle_max = c_.angle_max ;
+    msg_.angle_increment = c_.angle_increment;
+    msg_.range_min = c_.range_min;
+    msg_.range_max = c_.range_max;
+    msg_.scan_time = c_.scan_time;
+    msg_.rec_time = c_.rec_time;
+    msg_.middle_z = c_.middle_z;
+    msg_.idForTracking = c_.idForTracking; 
 
-        msg_.header.stamp = ros::Time::now();
-        msg_.header.frame_id = c_.header.frame_id;
-        msg_.factor = c_.factor;
-        msg_.overlap = c_.overlap;
-        msg_.first_stamp = c_.first_stamp;
-        msg_.num_scans = c_.num_scans ;
-        msg_.angle_min = c_.angle_min ;
-        msg_.angle_max = c_.angle_max ;
-        msg_.angle_increment = c_.angle_increment;
-        msg_.range_min = c_.range_min;
-        msg_.range_max = c_.range_max;
-        msg_.scan_time = c_.scan_time;
-        msg_.rec_time = c_.rec_time;
-        msg_.middle_z = c_.middle_z;
-        msg_.idForTracking = c_.idForTracking; 
-
-
-        pub.publish(msg_);
-    }
+    if(temp_clusters.size()>0) pub.publish(msg_);
+    else if(msg_.stationary_clusters.size()>0) stationary_pub.publish(msg_);
+    
 }
 
 int main (int argc, char** argv){
@@ -479,12 +474,16 @@ int main (int argc, char** argv){
 
     std::string topic;
     std::string out_topic;
+    std::string stationary_topic;
     n_.param("pointcloud2_clustering/topic", topic, std::string("laserscan_stacker/scans"));
     n_.param("pointcloud2_clustering/out_topic", out_topic, std::string("pointcloud2_clustering/clusters"));
+    n_.param("pointcloud2_clustering/stationary_topic", stationary_topic, std::string("pointcloud2_clustering/stationary_clusters"));
+
 
     ros::Subscriber sub = n_.subscribe (topic, 1, cloud_callback);
 
     pub = n_.advertise<pointcloud_msgs::PointCloud2_Segments> (out_topic, 1);
+    stationary_pub = n_.advertise<pointcloud_msgs::PointCloud2_Segments> (stationary_topic, 1);
 
     ros::spin ();
 }
