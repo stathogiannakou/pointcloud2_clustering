@@ -586,60 +586,136 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             }
 
 
-            int counterx=0, countery=0, counterz=0;
+            int counterx=0, countery=0, counterz=0, countery_dist=0, counterx_dist=0;
             bool counterz_flag=true;
             std::cout << "---" << std::endl;
+            bool erase_flag = false;
 
-            if((maxy>minz_maxy+0.09 and miny>minz_miny+0.09) or (maxy<minz_maxy-0.09 and miny<minz_miny-0.09)){
-                
-                for(int j=0; j < 30; j++){
-                // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
-                // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
-                    if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
-                        counterz_flag=false;
-                        counterz++;
-                        // if(abs(min_max_points[0][j]-min_max_points[1][j])>= std::max(abs(maxy-minz_miny), abs(miny-minz_maxy))) countery++;
-                    }
-                }
-
-                //std::cout << "maxy = " << maxy << " minz_maxy = " << minz_maxy <<  " dist_maxy = " << abs(maxy-minz_maxy) << std::endl;
-                //std::cout << "miny = " << miny << " minz_miny = " << minz_miny << "dist_miny = " << abs(miny-minz_miny) << std::endl;
-                
-            }
-            if((maxx>minz_maxx+0.09 and minx>minz_minx+0.09) or (maxx<minz_maxx-0.09 and minx<minz_minx-0.09)){
-
-                for(int j=0; j < 30; j++){
-                // std::cout << "min_max_points[2] " << min_max_points[2][j] << std::endl;
-                // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
-                    if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
-                        if(counterz_flag==true) counterz++;
-                        // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
-                    }
-                }
-                // std::cout << "maxx = " << maxx << " minz_maxx = " << minz_maxx << "dist_maxx = " << abs(maxx-minz_maxx) << std::endl;
-                // std::cout << "minx = " << minx << " minz_minx = " << minz_minx << "dist_minx= " << abs(minx-minz_minx) << std::endl;
-
-            }
-            
-
-            
-
-            if(!((maxy>minz_maxy+0.09 and miny>minz_miny+0.09) or (maxx>minz_maxx+0.09 and minx>minz_minx+0.09) or (maxy<minz_maxy-0.09 and miny<minz_miny-0.09) or (maxx<minz_maxx-0.09 and minx<minz_minx-0.09))){
+            if(maxy==miny or minz_maxy == minz_miny or maxx==minx or minz_maxx == minz_minx){
                 msg_.stationary_clusters.push_back(temp_clusters[i]);
                 temp_clusters.erase(temp_clusters.begin()+i);
             }
             else{
-                std::cout << "total_disty = " << abs(total_maxy-total_miny) << std::endl;
-                std::cout << "total_distx = " << abs(total_maxx-total_minx) << std::endl;
-                std::cout << "total_distz = " << abs(maxz-minz) << std::endl;
-                // std::cout << "total_points = " << cloud2.points.size() << std::endl;
-                // std::cout << "counterz = " << counterz << std::endl;
-                // std::cout << "counterx% = " << counterx*100/counterz << std::endl;
-                // std::cout << "countery% = " << countery*100/counterz << std::endl; 
+                if(maxy>minz_maxy+0.09 and miny>minz_miny+0.09){
+                    
+                    for(int j=0; j < 15; j++){
+                    // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
+                    // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
+                        if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
+                            if(maxy<min_max_points[0][j]) countery++;
+                            counterz_flag=false;
+                            counterz++;
+                            // if(abs(min_max_points[0][j]-min_max_points[1][j])>= std::max(abs(maxy-minz_miny), abs(miny-minz_maxy))) countery++;
+                        }
+                    }
+                    for(int j=15; j < 30; j++){
+                    // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
+                    // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
+                        if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
+                            if(maxy<min_max_points[0][j]) countery++;
+                            counterz_flag=false;
+                            counterz++;
+                            if(abs(maxy-min_max_points[0][j])<=0.02) countery_dist++;
+                            // if(abs(min_max_points[0][j]-min_max_points[1][j])>= std::max(abs(maxy-minz_miny), abs(miny-minz_maxy))) countery++;
+                        }
+                    }
+
+                    //std::cout << "maxy = " << maxy << " minz_maxy = " << minz_maxy <<  " dist_maxy = " << abs(maxy-minz_maxy) << std::endl;
+                    //std::cout << "miny = " << miny << " minz_miny = " << minz_miny << "dist_miny = " << abs(miny-minz_miny) << std::endl;             
+                }
+                else if(maxy<minz_maxy-0.09 and miny<minz_miny-0.09){
+
+                    for(int j=0; j<15; j++){
+                    // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
+                    // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
+                        if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
+                            if(miny>min_max_points[1][j]) countery++;
+                            counterz_flag=false;
+                            counterz++;
+                            // if(abs(min_max_points[0][j]-min_max_points[1][j])>= std::max(abs(maxy-minz_miny), abs(miny-minz_maxy))) countery++;
+                        }
+                    }
+                    for(int j=15; j<30; j++){
+                    // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
+                    // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
+                        if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
+                            if(miny>min_max_points[1][j]) countery++;
+                            counterz_flag=false;
+                            counterz++;
+                            if(abs(miny-min_max_points[1][j])<=0.02) countery_dist++;
+                            // if(abs(min_max_points[0][j]-min_max_points[1][j])>= std::max(abs(maxy-minz_miny), abs(miny-minz_maxy))) countery++;
+                        }
+                    }
+
+                }
+                if(maxx>minz_maxx+0.09 and minx>minz_minx+0.09){
+
+                    for(int j=0; j < 15; j++){
+                    // std::cout << "min_max_points[2] " << min_max_points[2][j] << std::endl;
+                    // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
+                        if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
+                            if(maxx<min_max_points[2][j]) counterx++;
+                            if(counterz_flag==true) counterz++;
+                            // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
+                        }
+                    }
+                    for(int j=15; j < 30; j++){
+                    // std::cout << "min_max_points[2] " << min_max_points[2][j] << std::endl;
+                    // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
+                        if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
+                            if(maxx<min_max_points[2][j]) counterx++;
+                            if(counterz_flag==true) counterz++;
+                            if(abs(maxx-min_max_points[2][j])<=0.02) counterx_dist++;
+                            // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
+                        }
+                    }
+                    // std::cout << "maxx = " << maxx << " minz_maxx = " << minz_maxx << "dist_maxx = " << abs(maxx-minz_maxx) << std::endl;
+                    // std::cout << "minx = " << minx << " minz_minx = " << minz_minx << "dist_minx= " << abs(minx-minz_minx) << std::endl;
+
+                }
+                else if (maxx<minz_maxx-0.09 and minx<minz_minx-0.09){
+
+                    for(int j=0; j<15; j++){
+                    // std::cout << "min_max_points[2] " << min_max_points[2][j] << std::endl;
+                    // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
+                        if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
+                            if(minx>min_max_points[3][j]) counterx++;
+                            if(counterz_flag==true) counterz++;
+                            // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
+                        }
+                    }
+                    for(int j=15; j<30; j++){
+                    // std::cout << "min_max_points[2] " << min_max_points[2][j] << std::endl;
+                    // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
+                        if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
+                            if(minx>min_max_points[3][j]) counterx++;
+                            if(counterz_flag==true) counterz++;
+                            if(abs(minx-min_max_points[3][j])<=0.02) counterx_dist++;
+                            // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
+                        }
+                    }
+                }
+
+                if((!((maxy>minz_maxy+0.09 and miny>minz_miny+0.09) or (maxx>minz_maxx+0.09 and minx>minz_minx+0.09) or (maxy<minz_maxy-0.09 and miny<minz_miny-0.09) or (maxx<minz_maxx-0.09 and minx<minz_minx-0.09))) or counterx>5 or countery>5){
+                    msg_.stationary_clusters.push_back(temp_clusters[i]);
+                    temp_clusters.erase(temp_clusters.begin()+i);
+                }
+                else{
+                    // std::cout << "total_disty = " << abs(total_maxy-total_miny) << std::endl;
+                    // std::cout << "total_distx = " << abs(total_maxx-total_minx) << std::endl;
+                    // std::cout << "total_distz = " << abs(maxz-minz) << std::endl;
+                    // std::cout << "total_points = " << cloud2.points.size() << std::endl;
+                    // std::cout << "counterz = " << counterz << std::endl;
+                    // std::cout << "counterx% = " << counterx*100/counterz << std::endl;
+                    // std::cout << "countery% = " << countery*100/counterz << std::endl; 
+                    std::cout << "counterx = " << counterx_dist << " countery = " << countery_dist << " counterz = " << counterz  << std::endl;
 
 
-
+                }
             }
+
+            
+
 
             min_max_points.clear();       
         }   
