@@ -24,21 +24,8 @@
 #include <algorithm>    // std::max()
 
 
+#include <string>
 
-    #include <string>
-
-// #include <pcl/point_types.h>
-// #include <pcl/visualization/point_cloud_geometry_handlers.h>
-// #include <pcl/visualization/pcl_visualizer.h>
-// #include <pcl/features/normal_3d.h>
-// #include <pcl/io/pcd_io.h>
-// #include <pcl/search/organized.h>
-// #include <pcl/search/kdtree.h>
-// #include <pcl/features/normal_3d_omp.h>
-// #include <pcl/filters/conditional_removal.h>
-// #include <pcl/segmentation/extract_clusters.h>
-
-// #include <pcl/features/don.h>
 
 using namespace pcl;
 using namespace std;
@@ -237,137 +224,6 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
     }
 
     *cloud=*cloud_filtered;
-
-
-
-
-  // // Create a search tree, use KDTreee for non-organized data.
-
-  // pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-
-  // // Set the input pointcloud for the search tree
-  // tree->setInputCloud (cloud);
-
-
-  // // Compute normals using both small and large scales at each point
-  // pcl::NormalEstimationOMP<PointXYZ, PointNormal> ne;
-  // ne.setInputCloud (cloud);
-  // ne.setSearchMethod (tree);
-
-  // /**
-  //  * NOTE: setting viewpoint is very important, so that we can ensure
-  //  * normals are all pointed in the same direction!
-  //  */
-
-  // // ne.setViewPoint (std::numeric_limits<float>::max (), std::numeric_limits<float>::max (), std::numeric_limits<float>::max ());
-  // ne.setViewPoint (0.0,0.0,0.0);
-
-  // // calculate normals with the small scale
-  // //std::cout << "Calculating normals for scale..." << scale1 << std::endl;
-  // pcl::PointCloud<PointNormal>::Ptr normals_small_scale (new pcl::PointCloud<PointNormal>);
-
-  // ne.setRadiusSearch (0.1);
-  // ne.compute (*normals_small_scale);
-
-  // // calculate normals with the large scale
-  // // std::cout << "Calculating normals for scale..." << scale2 << std::endl;
-  //   pcl::PointCloud<PointNormal>::Ptr normals_large_scale (new pcl::PointCloud<PointNormal>);
-
-  // ne.setRadiusSearch (0.4);
-  // ne.compute (*normals_large_scale);
-
-  // // Create output cloud for DoN results
-  // PointCloud<PointNormal>::Ptr doncloud (new pcl::PointCloud<PointNormal>);
-  // copyPointCloud (*cloud, *doncloud);
-
-  // std::cout << "Calculating DoN... " << std::endl;
-  // // Create DoN operator
-  // pcl::DifferenceOfNormalsEstimation<PointXYZ, PointNormal, PointNormal> don;
-  // don.setInputCloud (cloud);
-  // don.setNormalScaleLarge (normals_large_scale);
-  // don.setNormalScaleSmall (normals_small_scale);
-
-  // if (!don.initCompute ())
-  // {
-  //   std::cerr << "Error: Could not initialize DoN feature operator" << std::endl;
-  //   exit (EXIT_FAILURE);
-  // }
-
-  // // Compute DoN
-  // don.computeFeature (*doncloud);
-
-
-  // // Filter by magnitude
-  // // std::cout << "Filtering out DoN mag <= " << threshold << "..." << std::endl;
-
-  // // Build the condition for filtering
-  // pcl::ConditionOr<PointNormal>::Ptr range_cond (
-  //   new pcl::ConditionOr<PointNormal> ()
-  //   );
-  // range_cond->addComparison (pcl::FieldComparison<PointNormal>::ConstPtr (
-  //                              new pcl::FieldComparison<PointNormal> ("curvature", pcl::ComparisonOps::GT, 0.25))
-  //                            );
-  // // Build the filter
-  // pcl::ConditionalRemoval<PointNormal> condrem;
-  // condrem.setCondition (range_cond);
-  // condrem.setInputCloud (doncloud);
-
-  // pcl::PointCloud<PointNormal>::Ptr doncloud_filtered (new pcl::PointCloud<PointNormal>);
-
-  // // Apply filter
-  // condrem.filter (*doncloud_filtered);
-
-  // doncloud = doncloud_filtered;
-
-  // // Save filtered output
-  // std::cout << "Filtered Pointcloud: " << doncloud->points.size () << " data points." << std::endl;
- 
-  // // Filter by magnitude
-  // //std::cout << "Clustering using EuclideanClusterExtraction with tolerance <= " << segradius << "..." << std::endl;
-
-  // pcl::search::KdTree<PointNormal>::Ptr segtree (new pcl::search::KdTree<PointNormal>);
-  // segtree->setInputCloud (doncloud);
-
-  // std::vector<pcl::PointIndices> cluster_indices;
-  // pcl::EuclideanClusterExtraction<PointNormal> ec;
-
-  // ec.setClusterTolerance (clusterTolerance);
-  // ec.setMinClusterSize (50);
-  // ec.setMaxClusterSize (100000);
-  // ec.setSearchMethod (segtree);
-  // ec.setInputCloud (doncloud);
-  // ec.extract (cluster_indices);
-
-
-  // pointcloud_msgs::PointCloud2_Segments msg_;
-  // std::vector<sensor_msgs::PointCloud2> temp_clusters;
-
-  // int j = 0;
-  // for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it, j++)
-  // {
-  //   pcl::PointCloud<PointNormal>::Ptr cloud_cluster_don (new pcl::PointCloud<PointNormal>);
-  //   for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
-  //   {
-  //     cloud_cluster_don->points.push_back (doncloud->points[*pit]);
-  //   }
-
-  //   cloud_cluster_don->width = int (cloud_cluster_don->points.size ());
-  //   cloud_cluster_don->height = 1;
-  //   cloud_cluster_don->is_dense = true;
-
-  //       sensor_msgs::PointCloud2 msgout;
-  //       pcl::PCLPointCloud2 cloud2;
-  //       pcl::toPCLPointCloud2(*cloud_cluster_don, cloud2);
-
-  //       pcl_conversions::fromPCL(cloud2, msgout);
-  //       // msg_.clusters.push_back(msgout);
-  //       temp_clusters.push_back(msgout);
-
-  // }
-
-
-
-
 
 
 
@@ -729,124 +585,46 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                 }        
             }
 
-            // double mean_maxy=0, mean_miny=0, mean_maxx=0, mean_minx=0, sd_maxy=0, sd_miny=0, sd_maxx=0, sd_minx=0;
 
             int counterx=0, countery=0, counterz=0;
             bool counterz_flag=true;
-            double prev_zmax, prev_zmin;
-            int tempj=30, smaller_maxy=0, bigger_maxy=0, smaller_miny=0, bigger_miny=0, smaller_maxx=0, bigger_maxx=0, smaller_minx=0, bigger_minx=0;
-
             std::cout << "---" << std::endl;
 
             if((maxy>minz_maxy+0.09 and miny>minz_miny+0.09) or (maxy<minz_maxy-0.09 and miny<minz_miny-0.09)){
+                
                 for(int j=0; j < 30; j++){
-                    if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
-                        prev_zmax=min_max_points[0][j];
-                        prev_zmin=min_max_points[1][j];
-                        tempj=j;
-                        counterz_flag=false;
-                        counterz++;
-                        break;
-                    }
-                }
-                for(int j=tempj+1; j < 30; j++){
                 // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
                 // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
                     if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
-                        // mean_maxy+=min_max_points[0][j];
-                        // mean_miny+=min_max_points[1][j]; 
-                        // counterz_flag=false;
-                        if(min_max_points[0][j]>prev_zmax) bigger_maxy++;
-                        else if(min_max_points[0][j]<prev_zmax) smaller_maxy++;
-
-                        if(min_max_points[1][j]>prev_zmax) bigger_miny++;
-                        else if(min_max_points[1][j]<prev_zmax) smaller_miny++;
+                        counterz_flag=false;
                         counterz++;
-                        prev_zmax=min_max_points[0][j];
-                        prev_zmin=min_max_points[1][j];
                         // if(abs(min_max_points[0][j]-min_max_points[1][j])>= std::max(abs(maxy-minz_miny), abs(miny-minz_maxy))) countery++;
                     }
                 }
-                std::cout << "bigger_maxy = " << bigger_maxy << " smaller_maxy = " << smaller_maxy << " bigger_miny = " << bigger_miny << " smaller_miny = " << smaller_miny << " counterz = " << counterz  << std::endl;
 
                 //std::cout << "maxy = " << maxy << " minz_maxy = " << minz_maxy <<  " dist_maxy = " << abs(maxy-minz_maxy) << std::endl;
                 //std::cout << "miny = " << miny << " minz_miny = " << minz_miny << "dist_miny = " << abs(miny-minz_miny) << std::endl;
                 
-
-
-                // mean_maxy/=counterz;
-                // mean_miny/=counterz;
-
-                // for(int j=0; j < 30; j++){
-                //     if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
-                //         sd_maxy+=pow(min_max_points[0][j]-mean_maxy,2);
-                //         sd_miny+=pow(min_max_points[1][j]-mean_miny,2); 
-                //     }
-                // }
-
-                // sd_maxy=sqrt((sd_maxy/counterz));
-                // sd_miny=sqrt((sd_miny/counterz));
-                // sd_maxy=(sd_maxy/abs(mean_maxy))*100;
-                // sd_miny=(sd_miny/abs(mean_miny))*100;
             }
             if((maxx>minz_maxx+0.09 and minx>minz_minx+0.09) or (maxx<minz_maxx-0.09 and minx<minz_minx-0.09)){
 
-                tempj=30;
-
                 for(int j=0; j < 30; j++){
-                    if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
-                        prev_zmax=min_max_points[2][j];
-                        prev_zmin=min_max_points[3][j];
-                        tempj=j;
-                        if(counterz_flag==true) counterz++;
-                        break;
-                    }
-                }
-
-                for(int j=tempj+1; j < 30; j++){
                 // std::cout << "min_max_points[2] " << min_max_points[2][j] << std::endl;
                 // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
                     if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
-                        // mean_maxx+=min_max_points[2][j];
-                        // mean_minx+=min_max_points[3][j];
-                        if(min_max_points[2][j]>prev_zmax) bigger_maxx++;
-                        else if(min_max_points[3][j]<prev_zmax) smaller_maxx++;
-
-                        if(min_max_points[2][j]>prev_zmax) bigger_minx++;
-                        else if(min_max_points[3][j]<prev_zmax) smaller_minx++;
-
-                        prev_zmax=min_max_points[2][j];
-                        prev_zmin=min_max_points[3][j];
                         if(counterz_flag==true) counterz++;
                         // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
                     }
                 }
                 // std::cout << "maxx = " << maxx << " minz_maxx = " << minz_maxx << "dist_maxx = " << abs(maxx-minz_maxx) << std::endl;
                 // std::cout << "minx = " << minx << " minz_minx = " << minz_minx << "dist_minx= " << abs(minx-minz_minx) << std::endl;
-                std::cout << "bigger_maxx = " << bigger_maxx << " smaller_maxx = " << smaller_maxx << " bigger_minx = " << bigger_minx << " smaller_minx = " << smaller_minx << " counterz = " << counterz << std::endl;
-
-
-                // mean_maxx/=counterz;
-                // mean_minx/=counterz;
-                // for(int j=0; j < 30; j++){
-                //     if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
-                //         sd_maxx+=pow(min_max_points[2][j]-mean_maxx,2);
-                //         sd_minx+=pow(min_max_points[3][j]-mean_minx,2); 
-                //     }
-                // }
-
-                // sd_maxx=sqrt((sd_maxx/counterz));
-                // sd_minx=sqrt((sd_minx/counterz));
-                // sd_maxx=(sd_maxx/abs(mean_maxx))*100;
-                // sd_minx=(sd_minx/abs(mean_minx))*100;
 
             }
             
 
             
 
-            if(!((maxy>minz_maxy+0.09 and miny>minz_miny+0.09) or (maxx>minz_maxx+0.09 and minx>minz_minx+0.09) or (maxy<minz_maxy-0.09 and miny<minz_miny-0.09) or (maxx<minz_maxx-0.09 and minx<minz_minx-0.09))){ 
-                //or (sd_miny<8 and sd_maxy<8 and sd_minx<8 and sd_maxx<8) ){
+            if(!((maxy>minz_maxy+0.09 and miny>minz_miny+0.09) or (maxx>minz_maxx+0.09 and minx>minz_minx+0.09) or (maxy<minz_maxy-0.09 and miny<minz_miny-0.09) or (maxx<minz_maxx-0.09 and minx<minz_minx-0.09))){
                 msg_.stationary_clusters.push_back(temp_clusters[i]);
                 temp_clusters.erase(temp_clusters.begin()+i);
             }
@@ -857,48 +635,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                 // std::cout << "total_points = " << cloud2.points.size() << std::endl;
                 // std::cout << "counterz = " << counterz << std::endl;
                 // std::cout << "counterx% = " << counterx*100/counterz << std::endl;
-                // std::cout << "countery% = " << countery*100/counterz << std::endl;
-                // std::cout << "mean_maxy = " << mean_maxy << " sd_maxy = " << sd_maxy << std::endl;
-                // std::cout << "mean_miny = " << mean_miny << " sd_miny = " << sd_miny << std::endl;
-                // std::cout << "mean_maxx = " << mean_maxx << " sd_maxx = " << sd_maxx << std::endl;
-                // std::cout << "mean_minx = " << mean_minx << " sd_minx = " << sd_minx << std::endl;  
-
-
-
-
-                 //                 pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-                 //                   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-                                 
-                 //    pcl::fromPCLPointCloud2(pc2, *cloud);
-                 //  ne.setInputCloud (cloud);
-
-                 //  // Create an empty kdtree representation, and pass it to the normal estimation object.
-                 //  // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-                 //  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-                 //  ne.setSearchMethod (tree);
-
-                 //  // Output datasets
-                 //  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
-
-                 //  // Use all neighbors in a sphere of radius 3cm
-                 //  ne.setRadiusSearch (0.03);
-
-                 //  // Compute the features
-                 //  ne.compute (*cloud_normals);
-
-                 //  pcl::visualization::PCLVisualizer viewer("PCL Viewer");
-                 // viewer.setBackgroundColor (0.0, 0.0, 0.5);
-                 // viewer.addPointCloudNormals<pcl::PointXYZ, pcl::Normal>(cloud, cloud_normals);
-
-                 // while (!viewer.wasStopped ())  // THE ORGINAL !viewer.wasStopped () 
-                 //         {
-                 //           viewer.spinOnce ();
-                 //         }
-
-
-  //for(int j=0; j<cloud_normals->points.size(); j++) std::cout << cloud_normals->points[j]<< std::endl;
-
-  // cloud_normals->points.size () should have the same size as the input cloud->points.size ()*
+                // std::cout << "countery% = " << countery*100/counterz << std::endl; 
 
 
 
