@@ -334,12 +334,18 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
              min_max_points.push_back(std::vector<double>(30, -0.01));
              min_max_points.push_back(std::vector<double>(30, 40.00));
 
+             min_max_points.push_back(std::vector<double>(30, 0.00));
+
              int index= (100*cloud2.points[0].z)/5;
 
              if(min_max_points[0][index]<cloud2.points[0].y) min_max_points[0][index]= cloud2.points[0].y;
              if(min_max_points[1][index]>cloud2.points[0].y) min_max_points[1][index]= cloud2.points[0].y;
              if(min_max_points[2][index]<cloud2.points[0].x) min_max_points[2][index]= cloud2.points[0].x;
-             if(min_max_points[3][index]>cloud2.points[0].x) min_max_points[3][index]= cloud2.points[0].x;
+             if(min_max_points[3][index]>cloud2.points[0].x){
+                min_max_points[3][index]= cloud2.points[0].x;
+                min_max_points[4][index]= cloud2.points[0].y;
+            }
+
 
 
 
@@ -350,7 +356,10 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                 if(min_max_points[0][index]<cloud2.points[j].y) min_max_points[0][index]= cloud2.points[j].y;
                 if(min_max_points[1][index]>cloud2.points[j].y) min_max_points[1][index]= cloud2.points[j].y;
                 if(min_max_points[2][index]<cloud2.points[j].x) min_max_points[2][index]= cloud2.points[j].x;
-                if(min_max_points[3][index]>cloud2.points[j].x) min_max_points[3][index]= cloud2.points[j].x;
+                if(min_max_points[3][index]>cloud2.points[j].x){
+                    min_max_points[3][index]= cloud2.points[j].x;
+                    min_max_points[4][index]= cloud2.points[j].y;
+                }
 
 
 
@@ -586,10 +595,11 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
             }
 
 
-            int counterx=0, countery=0, counterz=0, countery_dist=0, counterx_dist=0;
+            int counterx=0, countery=0, counterz=0, countery_dist=0, counterx_dist=0, check_curv=0;
             bool counterz_flag=true;
             std::cout << "---" << std::endl;
             bool erase_flag = false;
+
 
             if(maxy==miny or minz_maxy == minz_miny or maxx==minx or minz_maxx == minz_minx){
                 msg_.stationary_clusters.push_back(temp_clusters[i]);
@@ -602,6 +612,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
                     // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
                         if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
+                            if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
                             if(maxy<min_max_points[0][j]) countery++;
                             counterz_flag=false;
                             counterz++;
@@ -612,6 +623,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
                     // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
                         if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
+                            if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
                             if(maxy<min_max_points[0][j]) countery++;
                             counterz_flag=false;
                             counterz++;
@@ -629,6 +641,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[0] " << min_max_points[0][j] << std::endl;
                     // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
                         if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
+                            if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
                             if(miny>min_max_points[1][j]) countery++;
                             counterz_flag=false;
                             counterz++;
@@ -640,6 +653,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[1] " << min_max_points[1][j] << std::endl;
                         if(min_max_points[0][j]!=std::numeric_limits<double>::lowest() and min_max_points[1][j]!= std::numeric_limits<double>::max()){
                             if(miny>min_max_points[1][j]) countery++;
+                            if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
                             counterz_flag=false;
                             counterz++;
                             if(abs(miny-min_max_points[1][j])<=0.02) countery_dist++;
@@ -648,6 +662,8 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     }
 
                 }
+
+
                 if(maxx>minz_maxx+0.09 and minx>minz_minx+0.09){
 
                     for(int j=0; j < 15; j++){
@@ -655,7 +671,10 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
                         if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
                             if(maxx<min_max_points[2][j]) counterx++;
-                            if(counterz_flag==true) counterz++;
+                            if(counterz_flag==true){
+                                counterz++;
+                                if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
+                            }
                             // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
                         }
                     }
@@ -664,7 +683,10 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
                         if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
                             if(maxx<min_max_points[2][j]) counterx++;
-                            if(counterz_flag==true) counterz++;
+                            if(counterz_flag==true){
+                                counterz++;
+                                if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
+                            }
                             if(abs(maxx-min_max_points[2][j])<=0.02) counterx_dist++;
                             // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
                         }
@@ -680,7 +702,10 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
                         if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
                             if(minx>min_max_points[3][j]) counterx++;
-                            if(counterz_flag==true) counterz++;
+                            if(counterz_flag==true){
+                                counterz++;
+                                if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
+                            }
                             // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
                         }
                     }
@@ -689,7 +714,10 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "min_max_points[3] " << min_max_points[3][j] << std::endl;
                         if(min_max_points[2][j]!=-0.01 and min_max_points[3][j]!= 40.00){
                             if(minx>min_max_points[3][j]) counterx++;
-                            if(counterz_flag==true) counterz++;
+                            if(counterz_flag==true){
+                                counterz++;
+                                if(min_max_points[4][j]==min_max_points[0][j] or min_max_points[4][j]==min_max_points[1][j]) check_curv++;
+                            }
                             if(abs(minx-min_max_points[3][j])<=0.02) counterx_dist++;
                             // if(abs(min_max_points[2][j]-min_max_points[3][j])>= std::max(abs(maxx-minz_minx), abs(minx-minz_maxx))) counterx++;
                         }
@@ -709,7 +737,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                     // std::cout << "counterx% = " << counterx*100/counterz << std::endl;
                     // std::cout << "countery% = " << countery*100/counterz << std::endl; 
                     std::cout << "counterx = " << counterx_dist << " countery = " << countery_dist << " counterz = " << counterz  << std::endl;
-
+                    std::cout << "check_curv = " << check_curv << std::endl;
 
                 }
             }
