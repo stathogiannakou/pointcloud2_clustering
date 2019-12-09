@@ -184,44 +184,44 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
     vg.filter (*cloud_filtered);
 
     // Create the segmentation object for the planar model and set all the parameters
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
-    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f (new pcl::PointCloud<pcl::PointXYZ> ());
-    seg.setOptimizeCoefficients (true);
-    seg.setModelType (pcl::SACMODEL_PLANE);
-    seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setMaxIterations (maxIterations);
-    seg.setDistanceThreshold (distanceThreshold);
+    // pcl::SACSegmentation<pcl::PointXYZ> seg;
+    // pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+    // pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f (new pcl::PointCloud<pcl::PointXYZ> ());
+    // seg.setOptimizeCoefficients (true);
+    // seg.setModelType (pcl::SACMODEL_PLANE);
+    // seg.setMethodType (pcl::SAC_RANSAC);
+    // seg.setMaxIterations (maxIterations);
+    // seg.setDistanceThreshold (distanceThreshold);
 
-    int i=0, nr_points = (int) cloud_filtered->points.size ();
-    while (cloud_filtered->points.size () > percentOfpoints * nr_points)
-    {
+    // int i=0, nr_points = (int) cloud_filtered->points.size ();
+    // while (cloud_filtered->points.size () > percentOfpoints * nr_points)
+    // {
 
-        // Segment the largest planar component from the remaining cloud
-        seg.setInputCloud (cloud_filtered);
-        seg.segment (*inliers, *coefficients);
-        if (inliers->indices.size () == 0)
-        {
-          break;
-        }
+    //     // Segment the largest planar component from the remaining cloud
+    //     seg.setInputCloud (cloud_filtered);
+    //     seg.segment (*inliers, *coefficients);
+    //     if (inliers->indices.size () == 0)
+    //     {
+    //       break;
+    //     }
 
-        // Extract the planar inliers from the input cloud
-        pcl::ExtractIndices<pcl::PointXYZ> extract;
-        extract.setInputCloud (cloud_filtered);
-        extract.setIndices (inliers);
-        extract.setNegative (false);
+    //     // Extract the planar inliers from the input cloud
+    //     pcl::ExtractIndices<pcl::PointXYZ> extract;
+    //     extract.setInputCloud (cloud_filtered);
+    //     extract.setIndices (inliers);
+    //     extract.setNegative (false);
 
-        // Get the points associated with the planar surface
-        extract.filter (*cloud_plane);
+    //     // Get the points associated with the planar surface
+    //     extract.filter (*cloud_plane);
       
 
-        // Remove the planar inliers, extract the rest
-        extract.setNegative (true);
-        extract.filter (*cloud_f);
-        *cloud_filtered = *cloud_f;
-    }
+    //     // Remove the planar inliers, extract the rest
+    //     extract.setNegative (true);
+    //     extract.filter (*cloud_f);
+    //     *cloud_filtered = *cloud_f;
+    // }
 
     *cloud=*cloud_filtered;
 

@@ -4,11 +4,11 @@ stationary_topic: "pointcloud2_cluster_tracking/clusters"
 #stationary_topic: "pointcloud2_clustering/stationary_clusters"
 maxIterations: 100 #default= 100
 distanceThreshold: 0.02 #default= 0.02 
-clusterTolerance: 0.3 #default= 0.02
-minClusterSize: 40 #default= 100
+clusterTolerance: 0.35 #default= 0.02
+minClusterSize: 10 #default= 100
 maxClusterSize: 250000 #default= 25000
 percentOfpoints: 0.30 #which is the minimum percentage of the original points to keep
-moving_clusters_only: true # keep only moving clusters
+moving_clusters_only: false # keep only moving clusters
 linear_check: false  # check clusters linearity
 vertical_check: false #check clusters verticality
 linear_dist: 0.1 # max distance between points for linear cluster
