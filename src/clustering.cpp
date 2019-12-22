@@ -127,9 +127,6 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
     pointcloud_msgs::PointCloud2_Segments msg_;
 
 
-    std::vector<sensor_msgs::PointCloud2> temp_clusters;
-
-
     for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
     {
 
@@ -150,14 +147,13 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
         pcl_conversions::fromPCL(cloud2, msgout);
 
-        temp_clusters.push_back(msgout);
-        //msg_.clusters.push_back(msgout);
+        msg_.clusters.push_back(msgout);
     }
 
 
     if(moving_clusters_only==true){
 
-        int initial_size = temp_clusters.size();
+        int initial_size =  msg_.clusters.size();
 
         //int numOfPoints;
         float maxz, minz, maxy, miny, maxy_x, miny_x, maxx, minx, maxx_y, minx_y, minz_maxz, minz_minz, minz_maxy, minz_miny, minz_maxy_x, minz_miny_x, minz_maxx, minz_minx, minz_maxx_y, minz_minx_y, total_maxy, total_miny, total_maxx, total_minx;
@@ -166,7 +162,7 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
         for(int i=initial_size-1; i>=0; i--){
 
             pcl::PCLPointCloud2 pc2;
-            pcl_conversions::toPCL ( temp_clusters[i] , pc2 );
+            pcl_conversions::toPCL (  msg_.clusters[i] , pc2 );
             pcl::PointCloud<PointTypeIO> cloud2;
             pcl::fromPCLPointCloud2 ( pc2 , cloud2 );
 
@@ -324,8 +320,8 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
 
             if(abs(maxy-miny)<0.02 or abs(minz_maxy-minz_miny)<0.02 or abs(maxx-minx)<0.01 or abs(minz_maxx-minz_minx)<0.01 or (abs(minz_minx-minx)<general_variable and abs(minz_minx_y- minx_y)<general_variable)){
-                msg_.stationary_clusters.push_back(temp_clusters[i]);
-                temp_clusters.erase(temp_clusters.begin()+i);
+                msg_.stationary_clusters.push_back( msg_.clusters[i]);
+                 msg_.clusters.erase( msg_.clusters.begin()+i);
             }
             else{
                 if(maxy>minz_maxy+0.09 and miny>minz_miny+0.09){
@@ -455,8 +451,8 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
                 }
 
                 if(!((maxy>minz_maxy+0.09 and miny>minz_miny+0.09) or (maxy<minz_maxy-0.09 and miny<minz_miny-0.09) or (maxx>minz_maxx+0.09 and minx>minz_minx+0.09) or (maxx<minz_maxx-0.09 and minx<minz_minx-0.09)) or counterx>5 or countery>5 or check_curv+2>=counterz){
-                    msg_.stationary_clusters.push_back(temp_clusters[i]);
-                    temp_clusters.erase(temp_clusters.begin()+i);
+                    msg_.stationary_clusters.push_back( msg_.clusters[i]);
+                     msg_.clusters.erase( msg_.clusters.begin()+i);
                 }
                 else{
                     // std::cout << "total_disty = " << abs(total_maxy-total_miny) << std::endl;
@@ -497,8 +493,6 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
 
     
 
-    msg_.clusters=temp_clusters;
-
     msg_.header.stamp = ros::Time::now();
     msg_.header.frame_id = c_.header.frame_id;
     msg_.factor = c_.factor;
@@ -513,9 +507,8 @@ void cloud_callback (const pointcloud_msgs::PointCloud2_Segments& c_)
     msg_.scan_time = c_.scan_time;
     msg_.rec_time = c_.rec_time;
     msg_.middle_z = c_.middle_z;
-    msg_.idForTracking = c_.idForTracking; 
-// if(msg_.clusters.size()>0) pub.publish(msg_);
-    if(temp_clusters.size()>0) pub.publish(msg_);
+    msg_.idForTracking = c_.idForTracking;
+    if( msg_.clusters.size()>0) pub.publish(msg_);
     else if(msg_.stationary_clusters.size()>0) stationary_pub.publish(msg_);    
 }
 
